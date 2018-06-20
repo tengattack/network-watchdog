@@ -93,6 +93,9 @@ func resetServer() (string, error) {
 
 func request204() error {
 	resp, err := http.Get(Generate204URL)
+	if err != nil {
+		return err
+	}
 	if resp.Body != nil {
 		// for reusing connection
 		ioutil.ReadAll(resp.Body)
