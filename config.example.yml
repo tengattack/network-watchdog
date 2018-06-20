@@ -1,0 +1,8 @@
+server:
+  hostname: '192.168.1.1'
+  username: 'ubnt'
+  password: 'ubnt'
+  reset_command: 'sudo /etc/init.d/redsocks restart'
+
+interval: '60s'
+down_times: 3
