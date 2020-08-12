@@ -1,8 +1,14 @@
-server:
-  hostname: '192.168.1.1'
-  username: 'ubnt'
-  password: 'ubnt'
-  reset_command: 'sudo /etc/init.d/redsocks restart'
+probes:
+- name: '' # defaults to server.hostname
 
-interval: '60s'
-down_times: 3
+  server:
+    hostname: '192.168.1.1'
+    username: 'ubnt'
+    password: 'ubnt'
+    #key_file: ''
+    reset_command: 'sudo /etc/init.d/redsocks restart'
+
+  #probe_url: '' # default: 'https://www.google.com/generate_204'
+  timeout: '5s'
+  interval: '60s'
+  down_times: 3
