@@ -53,8 +53,9 @@ type Config struct {
 
 // errors
 var (
-	ErrorStatusCodeIsNot204  = errors.New("response status code is not 204")
-	ErrorPingProbeUnfinished = errors.New("ping probe unfinished")
+	ErrorStatusCodeIsNot204   = errors.New("response status code is not 204")
+	ErrorPingProbeUnfinished  = errors.New("ping probe unfinished")
+	ErrorSSHSessionRunTimeout = errors.New("ssh session run timeout")
 )
 
 var confFilePath string
@@ -93,9 +94,11 @@ func resetServer(conf *ProbeConfig) (string, error) {
 		}
 		method = append(method, authMethod)
 	}
+	sshTimeout := 15 * time.Second
 	config := &ssh.ClientConfig{
-		User: conf.Server.Username,
-		Auth: method,
+		User:    conf.Server.Username,
+		Auth:    method,
+		Timeout: sshTimeout, // max time to establish connection
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
@@ -108,10 +111,11 @@ func resetServer(conf *ProbeConfig) (string, error) {
 		addr = conf.Server.Hostname + ":22"
 	}
 	// Connect
-	client, err := ssh.Dial("tcp", addr, config)
+	client, err := SSHDialTimeout("tcp", addr, config, sshTimeout)
 	if err != nil {
 		return "", err
 	}
+	defer client.Conn.Close()
 	// Create a session. It is one session per command.
 	session, err := client.NewSession()
 	if err != nil {
@@ -125,8 +129,19 @@ func resetServer(conf *ProbeConfig) (string, error) {
 	// content from client to server
 	//      session.Stdin = bytes.NewBufferString("My input")
 
-	// Finally, run the command
-	err = session.Run(conf.Server.ResetCommand)
+	t := time.NewTimer(sshTimeout)
+	ch := make(chan struct{}, 1)
+	go func() {
+		// Finally, run the command
+		err = session.Run(conf.Server.ResetCommand)
+		ch <- struct{}{}
+	}()
+	select {
+	case <-t.C:
+		err = ErrorSSHSessionRunTimeout
+	case <-ch:
+		t.Stop()
+	}
 	return b.String(), err
 }
 
