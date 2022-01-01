@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	ping "github.com/sparrc/go-ping"
+	"github.com/go-ping/ping"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
 )
